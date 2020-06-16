@@ -1,0 +1,103 @@
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `db_cen4020`.`CreateBasic`$$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `db_cen4020`.`CreateBasic`(IN `userName` VARCHAR(32), IN `p_Passw` VARCHAR(200),  IN `firstName` VARCHAR(49), IN `lastName` VARCHAR(49), IN `email` VARCHAR(49), IN `birthDate` VARCHAR(10), IN `countryID` INT, IN `raceID` INT, IN `genderID` INT)
+BEGIN
+    DECLARE `userCnt` INT DEFAULT 0;
+    DECLARE `result` INT DEFAULT 0;
+    DECLARE `hostName` CHAR(14) DEFAULT '@\'%\'';
+    DECLARE `p_UUID` VARCHAR(36)   CHARACTER SET 'utf8';
+    DECLARE `b_UUID` VARCHAR(36)   CHARACTER SET 'utf8';
+    SET `p_UUID` = UUID();
+    SET `result` = 0;
+    SELECT COUNT(user) into `userCnt` FROM mysql.user WHERE user=`userName`;
+    IF `userCnt` = 0 THEN
+        SET `result` = 1;
+        SET `userName` := CONCAT('\'', TRIM(`userName`), '\''),
+        `p_Passw` := CONCAT('\'', `p_Passw`, '\'');
+        
+        SET @`sql` := CONCAT('CREATE USER ', `userName`, `hostName`, ' IDENTIFIED BY ', `p_Passw`);
+        PREPARE `stmt` FROM @`sql`;    EXECUTE `stmt`;
+
+        SET @`sql` := CONCAT('GRANT INSERT,SELECT,DELETE ON db_cen4020.PreferredGenre TO ', `userName`, `hostName`);
+        PREPARE `stmt` FROM @`sql`;    EXECUTE `stmt`;
+        SET @`sql` := CONCAT('GRANT INSERT,SELECT,DELETE ON db_cen4020.GamesOwned TO ', `userName`, `hostName`);
+        PREPARE `stmt` FROM @`sql`;    EXECUTE `stmt`;
+        SET @`sql` := CONCAT('GRANT INSERT,SELECT,DELETE ON db_cen4020.PlatformsOwned TO ', `userName`, `hostName`);
+        PREPARE `stmt` FROM @`sql`;    EXECUTE `stmt`;
+        SET @`sql` := CONCAT('GRANT INSERT,SELECT,DELETE ON db_cen4020.DesignerRating TO ', `userName`, `hostName`);
+        PREPARE `stmt` FROM @`sql`;    EXECUTE `stmt`;
+        SET @`sql` := CONCAT('GRANT INSERT,SELECT,DELETE ON db_cen4020.PublisherRating TO ', `userName`, `hostName`);
+        PREPARE `stmt` FROM @`sql`;    EXECUTE `stmt`;
+        SET @`sql` := CONCAT('GRANT INSERT,SELECT,DELETE ON db_cen4020.GameRating TO ', `userName`, `hostName`);
+        PREPARE `stmt` FROM @`sql`;    EXECUTE `stmt`;
+        SET @`sql` := CONCAT('GRANT SELECT ON db_cen4020.BasicAccount TO ', `userName`, `hostName`);
+        PREPARE `stmt` FROM @`sql`;    EXECUTE `stmt`;
+        SET @`sql` := CONCAT('GRANT SELECT,UPDATE ON db_cen4020.PersonInfo TO ', `userName`, `hostName`);
+        PREPARE `stmt` FROM @`sql`;    EXECUTE `stmt`;
+        SET @`sql` := CONCAT('GRANT SELECT ON db_cen4020.Image TO ', `userName`, `hostName`);
+        PREPARE `stmt` FROM @`sql`;    EXECUTE `stmt`;
+        SET @`sql` := CONCAT('GRANT SELECT ON db_cen4020.GameTitle TO ', `userName`, `hostName`);
+        PREPARE `stmt` FROM @`sql`;    EXECUTE `stmt`;
+        SET @`sql` := CONCAT('GRANT SELECT ON db_cen4020.PublishedGame TO ', `userName`, `hostName`);
+        PREPARE `stmt` FROM @`sql`;    EXECUTE `stmt`;
+        SET @`sql` := CONCAT('GRANT SELECT ON db_cen4020.GamePublisher TO ', `userName`, `hostName`);
+        PREPARE `stmt` FROM @`sql`;    EXECUTE `stmt`;
+        SET @`sql` := CONCAT('GRANT SELECT ON db_cen4020.GameDesigner TO ', `userName`, `hostName`);
+        PREPARE `stmt` FROM @`sql`;    EXECUTE `stmt`;
+        SET @`sql` := CONCAT('GRANT EXECUTE ON PROCEDURE db_cen4020.UserNameExists TO ', `userName`, `hostName`);
+        PREPARE `stmt` FROM @`sql`;    EXECUTE `stmt`;
+        SET @`sql` := CONCAT('GRANT EXECUTE ON PROCEDURE db_cen4020.GetConnectionType TO ', `userName`, `hostName`);
+        PREPARE `stmt` FROM @`sql`;    EXECUTE `stmt`;
+
+        SET @`sql` := CONCAT('INSERT INTO db_cen4020.PersonInfo (personInfoUUID, userName, firstName, lastName, email, birthDate, countryID, raceID, genderID) VALUES (', '\'', `p_UUID`, '\', ', `userName`, ', \'', `firstName`, '\', \'', `lastName`, '\', \'', `email`, '\', \'', `birthDate`, '\', ', `countryID`, ', ', `raceID`, ', ', `genderID`, ')' );
+        PREPARE `stmt` FROM @`sql`;    EXECUTE `stmt`;
+        SET `b_UUID` = UUID();
+        SET @`sql` := CONCAT('INSERT INTO db_cen4020.BasicAccount (basicAccountUUID, personInfoUUID) VALUES (', '\'', `b_UUID`, '\', \'', `p_UUID`, '\' )' );
+        PREPARE `stmt` FROM @`sql`;    EXECUTE `stmt`;
+
+        DEALLOCATE PREPARE `stmt`;
+        FLUSH PRIVILEGES;
+    END IF;
+    SELECT `result`;
+END$$
+DELIMITER ;
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `db_cen4020`.`UserNameExists`$$
+CREATE PROCEDURE `db_cen4020`.`UserNameExists`(IN `userName` VARCHAR(32))
+BEGIN
+    SET @`sql` := CONCAT('SELECT COUNT(pi.userName) FROM db_cen4020.PersonInfo pi JOIN mysql.user mu
+    ON mu.User=pi.userName WHERE pi.userName=\'', `userName`, '\''); 
+    PREPARE `stmt` FROM @`sql`;
+
+    EXECUTE `stmt`;
+
+    DEALLOCATE PREPARE `stmt`;
+
+END$$
+DELIMITER ;
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `db_cen4020`.`GetConnectionType`$$
+CREATE PROCEDURE `db_cen4020`.`GetConnectionType`(IN `user_name` CHAR(32))
+BEGIN
+    DECLARE `returnVal` INT DEFAULT 0;
+    DECLARE `result_b` INT DEFAULT 0;
+    DECLARE `result_d` INT DEFAULT 0;
+    DECLARE `result_p` INT DEFAULT 0;
+    DECLARE `result_a` INT DEFAULT 0;
+    DECLARE `p_UUID` VARCHAR(36)   CHARACTER SET 'utf8';
+    SELECT personInfoUUID INTO `p_UUID` FROM db_cen4020.PersonInfo WHERE userName=`user_name`;
+    SELECT COUNT(personInfoUUID) INTO `result_b` FROM db_cen4020.BasicAccount WHERE personInfoUUID=`p_UUID`;
+    SELECT COUNT(personInfoUUID) INTO `result_d` FROM db_cen4020.DesignerAccount WHERE personInfoUUID=`p_UUID`;
+    SELECT COUNT(personInfoUUID) INTO `result_p` FROM db_cen4020.PublisherAccount WHERE personInfoUUID=`p_UUID`;
+    SELECT COUNT(personInfoUUID) INTO `result_a` FROM db_cen4020.AdminAccount WHERE personInfoUUID=`p_UUID`;
+    IF `result_b` > 0 THEN SET `returnVal` = 1;
+    ELSEIF `result_d` > 0 THEN SET `returnVal` = 2;
+    ELSEIF `result_p` > 0 THEN SET `returnVal` = 3;
+    ELSEIF `result_a` > 0 THEN SET `returnVal` = 4;
+    ELSE SET `returnVal` = 0;
+    END IF;
+    SELECT `returnVal`;
+END$$
+DELIMITER ;

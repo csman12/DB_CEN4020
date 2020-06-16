@@ -1,0 +1,278 @@
+DROP DATABASE IF EXISTS db_cen4020;
+CREATE DATABASE db_cen4020;
+
+DROP USER IF EXISTS 'accountGen', 'BasicUser1', 'BasicUser2', 'DevUser1', 'PubUser1', 'AdminUser1'  @'%';
+
+
+USE db_cen4020;
+
+DROP TABLE IF EXISTS PublisherRating;
+DROP TABLE IF EXISTS DesignerRating;
+DROP TABLE IF EXISTS GameRating;
+DROP TABLE IF EXISTS PreferredGenre;
+DROP TABLE IF EXISTS PlatformsOwned;
+DROP TABLE IF EXISTS GamesOwned;
+DROP TABLE IF EXISTS PublishedGame;
+DROP TABLE IF EXISTS GameTitle;
+DROP TABLE IF EXISTS AdminAccount;
+DROP TABLE IF EXISTS DesignerAccount;
+DROP TABLE IF EXISTS PublisherAccount;
+DROP TABLE IF EXISTS BasicAccount;
+DROP TABLE IF EXISTS PersonInfo;
+DROP TABLE IF EXISTS GameDesigner;
+DROP TABLE IF EXISTS GamePublisher;
+DROP TABLE IF EXISTS Image;
+DROP TABLE IF EXISTS GamePlatform;
+DROP TABLE IF EXISTS GameMaturity;
+DROP TABLE IF EXISTS GameGenre;
+DROP TABLE IF EXISTS Gender;
+DROP TABLE IF EXISTS Race;
+DROP TABLE IF EXISTS Country;
+
+CREATE TABLE Gender (
+genderID     INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+genderType  VARCHAR(50)  NOT NULL,
+PRIMARY KEY (genderID),
+CONSTRAINT UC_G_Gender UNIQUE (genderType) );
+
+CREATE TABLE Race (
+raceID     INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+raceType  VARCHAR(50)  NOT NULL,
+PRIMARY KEY (raceID),
+CONSTRAINT UC_R_Race UNIQUE (raceType) );
+
+CREATE TABLE Country (
+countryID     INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+countryName  VARCHAR(50)  NOT NULL,
+PRIMARY KEY (countryID),
+CONSTRAINT UC_C_Country UNIQUE (countryName)  );
+
+CREATE TABLE GameGenre (
+genreID INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+genreType VARCHAR(50)  NOT NULL,
+PRIMARY KEY (genreID),
+CONSTRAINT UC_GG_Genre UNIQUE (genreType) );
+
+CREATE TABLE GamePlatform (
+platformID INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+platformType VARCHAR(50)  NOT NULL,
+PRIMARY KEY (platformID),
+CONSTRAINT UC_GP_Platform UNIQUE (platformType) );
+
+CREATE TABLE GameMaturity (
+maturityID INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+maturityLevel VARCHAR(50)  NOT NULL,
+PRIMARY KEY (maturityID),
+CONSTRAINT UC_GM_Maturity UNIQUE (maturityLevel) );
+
+CREATE TABLE Image (
+imageID INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+imageName TEXT NOT NULL,
+fileData BLOB NOT NULL,
+PRIMARY KEY (imageID) );
+
+CREATE TABLE GameDesigner (
+gameDesignerID INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+companyName VARCHAR(50)  NOT NULL,
+countryHQID INT UNSIGNED  NOT NULL,
+addressHQ VARCHAR(100)  NOT NULL,
+establishedDate     DATE  NOT NULL,
+description TEXT  NOT NULL,
+imageID INT UNSIGNED  NOT NULL,
+PRIMARY KEY (gameDesignerID),
+CONSTRAINT FK_GD_Country FOREIGN KEY (countryHQID)
+  REFERENCES Country (countryID),
+CONSTRAINT FK_GD_Image FOREIGN KEY (imageID)
+  REFERENCES Image (imageID) );
+
+CREATE TABLE GamePublisher (
+gamePublisherID INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+companyName VARCHAR(50)  NOT NULL,
+countryHQID INT UNSIGNED  NOT NULL,
+addressHQ VARCHAR(100)  NOT NULL,
+establishedDate     DATE  NOT NULL,
+description TEXT  NOT NULL,
+imageID INT UNSIGNED  NOT NULL,
+PRIMARY KEY (gamePublisherID),
+CONSTRAINT FK_GP_Country FOREIGN KEY (countryHQID)
+  REFERENCES Country (countryID),
+CONSTRAINT FK_GP_Image FOREIGN KEY (imageID)
+  REFERENCES Image (imageID) );
+
+CREATE TABLE PersonInfo (
+personInfoUUID   VARCHAR(36)   CHARACTER SET 'utf8' NOT NULL,
+userName  CHAR(32)  COLLATE utf8_bin NOT NULL,
+firstName     VARCHAR(50)  NOT NULL,
+lastName      VARCHAR(50)  NOT NULL,
+email     VARCHAR(50)  NOT NULL,
+birthDate     DATE  NOT NULL,
+countryID  INT UNSIGNED  NOT NULL,
+raceID  INT UNSIGNED  NOT NULL,
+genderID     INT UNSIGNED  NOT NULL,
+PRIMARY KEY (personInfoUUID),
+CONSTRAINT UC_PI_UserName UNIQUE (userName),
+CONSTRAINT UC_PI_Email UNIQUE (email),
+CONSTRAINT FK_PI_Country FOREIGN KEY (countryID)
+  REFERENCES Country (countryID),
+CONSTRAINT FK_PI_Race FOREIGN KEY (raceID)
+  REFERENCES Race (raceID),
+CONSTRAINT FK_PI_Gender FOREIGN KEY (genderID)
+  REFERENCES Gender (genderID),
+CONSTRAINT FK_PI_UserName FOREIGN KEY (userName)
+  REFERENCES mysql.user (User)
+  ON DELETE CASCADE );
+
+CREATE TABLE DesignerAccount (
+designerAccountUUID  VARCHAR(36)   CHARACTER SET 'utf8' NOT NULL,
+gameDesignerID INT UNSIGNED  NOT NULL,
+personInfoUUID       VARCHAR(36)   CHARACTER SET 'utf8' NOT NULL,
+companyPosition  VARCHAR(50),
+employmentDate     DATE,
+PRIMARY KEY (designerAccountUUID),
+CONSTRAINT FK_DA_GameDesigner FOREIGN KEY (gameDesignerID)
+  REFERENCES GameDesigner (gameDesignerID)
+  ON DELETE CASCADE,
+CONSTRAINT FK_DA_PersonInfo FOREIGN KEY (personInfoUUID)
+  REFERENCES PersonInfo (personInfoUUID)
+  ON DELETE CASCADE );
+
+CREATE TABLE PublisherAccount (
+publisherAccountUUID  VARCHAR(36)   CHARACTER SET 'utf8' NOT NULL,
+gamePublisherID INT UNSIGNED  NOT NULL,
+personInfoUUID       VARCHAR(36)   CHARACTER SET 'utf8' NOT NULL,
+companyPosition  VARCHAR(50),
+employmentDate     DATE,
+PRIMARY KEY (publisherAccountUUID),
+CONSTRAINT FK_PA_GamePublisher FOREIGN KEY (gamePublisherID)
+  REFERENCES GamePublisher (gamePublisherID)
+  ON DELETE CASCADE,
+CONSTRAINT FK_PA_PersonInfo FOREIGN KEY (personInfoUUID)
+  REFERENCES PersonInfo (personInfoUUID)
+  ON DELETE CASCADE );
+
+CREATE TABLE BasicAccount (
+basicAccountUUID  VARCHAR(36)   CHARACTER SET 'utf8' NOT NULL,
+personInfoUUID       VARCHAR(36)   CHARACTER SET 'utf8' NOT NULL,
+PRIMARY KEY (basicAccountUUID),
+CONSTRAINT FK_BA_PersonInfo FOREIGN KEY (personInfoUUID)
+  REFERENCES PersonInfo (personInfoUUID)
+  ON DELETE CASCADE );
+
+CREATE TABLE AdminAccount (
+adminAccountUUID  VARCHAR(36)   CHARACTER SET 'utf8' NOT NULL,
+personInfoUUID       VARCHAR(36)   CHARACTER SET 'utf8' NOT NULL,
+PRIMARY KEY (adminAccountUUID),
+CONSTRAINT FK_AA_PersonInfo FOREIGN KEY (personInfoUUID)
+  REFERENCES PersonInfo (personInfoUUID)
+  ON DELETE CASCADE );
+
+CREATE TABLE GameTitle (
+gameTitleID  INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+gameTitle  VARCHAR(200)  NOT NULL,
+genreID INT UNSIGNED  NOT NULL,
+maturityID INT UNSIGNED  NOT NULL,
+description VARCHAR(5000)  NOT NULL,
+entryByUUID  VARCHAR(36)   CHARACTER SET 'utf8' NOT NULL,
+gameDesignerID INT UNSIGNED  NOT NULL,
+PRIMARY KEY (gameTitleID),
+CONSTRAINT UC_GT_GameTitle UNIQUE (gameTitle),
+CONSTRAINT FK_GT_GameGenre FOREIGN KEY (genreID)
+  REFERENCES GameGenre (genreID),
+CONSTRAINT FK_GT_GameMaturity FOREIGN KEY (maturityID)
+  REFERENCES GameMaturity (maturityID),
+CONSTRAINT FK_GT_GameDesigner FOREIGN KEY (gameDesignerID)
+  REFERENCES GameDesigner (gameDesignerID)
+  ON DELETE CASCADE ); 
+
+CREATE TABLE PublishedGame (
+publishedGameID INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+gameTitleID  INT UNSIGNED NOT NULL,
+platformID  INT UNSIGNED NOT NULL,
+releaseDate DATE NOT NULL,
+entryByUUID  VARCHAR(36)   CHARACTER SET 'utf8' NOT NULL,
+gamePublisherID INT UNSIGNED,
+imageID INT UNSIGNED  NOT NULL,
+PRIMARY KEY (publishedGameID),
+CONSTRAINT UC_PG_Published UNIQUE (gameTitleID, platformID),
+CONSTRAINT FK_PG_GameTitle FOREIGN KEY (gameTitleID)
+  REFERENCES GameTitle (gameTitleID)
+  ON DELETE CASCADE,
+CONSTRAINT FK_PG_GamePlatform FOREIGN KEY (platformID)
+  REFERENCES GamePlatform (platformID),
+CONSTRAINT FK_PG_GamePublisher FOREIGN KEY (gamePublisherID)
+  REFERENCES GamePublisher (gamePublisherID)
+  ON DELETE CASCADE,
+CONSTRAINT FK_PG_Image FOREIGN KEY (imageID)
+  REFERENCES Image (imageID) );
+
+CREATE TABLE GamesOwned (
+publishedGameID INT UNSIGNED  NOT NULL,
+basicAccountUUID  VARCHAR(36)   CHARACTER SET 'utf8' NOT NULL,
+PRIMARY KEY (publishedGameID, basicAccountUUID),
+CONSTRAINT FK_GO_PublishedGame FOREIGN KEY (publishedGameID)
+  REFERENCES PublishedGame (publishedGameID)
+  ON DELETE CASCADE,
+CONSTRAINT FK_GO_BasicAccount FOREIGN KEY (basicAccountUUID)
+  REFERENCES BasicAccount (basicAccountUUID)
+  ON DELETE CASCADE );
+
+CREATE TABLE PlatformsOwned (
+platformID INT UNSIGNED  NOT NULL,
+basicAccountUUID  VARCHAR(36)   CHARACTER SET 'utf8' NOT NULL,
+PRIMARY KEY (platformID, basicAccountUUID),
+CONSTRAINT FK_PO_GamePlatform FOREIGN KEY (platformID)
+  REFERENCES GamePlatform (platformID)
+  ON DELETE CASCADE,
+CONSTRAINT FK_PO_BasicAccount FOREIGN KEY (basicAccountUUID)
+  REFERENCES BasicAccount (basicAccountUUID)
+  ON DELETE CASCADE );
+
+CREATE TABLE PreferredGenre (
+genreID INT UNSIGNED  NOT NULL,
+basicAccountUUID  VARCHAR(36)   CHARACTER SET 'utf8' NOT NULL,
+PRIMARY KEY (genreID, basicAccountUUID),
+CONSTRAINT FK_PG_Genre FOREIGN KEY (genreID)
+  REFERENCES GameGenre (genreID)
+  ON DELETE CASCADE,
+CONSTRAINT FK_PG_BasicAccount FOREIGN KEY (basicAccountUUID)
+  REFERENCES BasicAccount (basicAccountUUID)
+  ON DELETE CASCADE );
+
+CREATE TABLE GameRating (
+publishedGameID  INT UNSIGNED  NOT NULL,
+basicAccountUUID  VARCHAR(36)   CHARACTER SET 'utf8' NOT NULL,
+rating TINYINT UNSIGNED  NOT NULL,
+comment TEXT,
+PRIMARY KEY (publishedGameID, basicAccountUUID),
+CONSTRAINT FK_GR_PublishedGameID FOREIGN KEY (publishedGameID)
+  REFERENCES PublishedGame (publishedGameID)
+  ON DELETE CASCADE,
+CONSTRAINT FK_GR_BasicAccount FOREIGN KEY (basicAccountUUID)
+  REFERENCES BasicAccount (basicAccountUUID)
+  ON DELETE CASCADE );
+
+CREATE TABLE DesignerRating (
+gameDesignerID INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+basicAccountUUID  VARCHAR(36)   CHARACTER SET 'utf8' NOT NULL,
+rating TINYINT UNSIGNED  NOT NULL,
+comment TEXT,
+PRIMARY KEY (gameDesignerID, basicAccountUUID),
+CONSTRAINT FK_DR_GameDesigner FOREIGN KEY (gameDesignerID)
+  REFERENCES GameDesigner (gameDesignerID)
+  ON DELETE CASCADE,
+CONSTRAINT FK_DR_BasicAccount FOREIGN KEY (basicAccountUUID)
+  REFERENCES BasicAccount (basicAccountUUID)
+  ON DELETE CASCADE );
+
+CREATE TABLE PublisherRating (
+gamePublisherID INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+basicAccountUUID  VARCHAR(36)   CHARACTER SET 'utf8' NOT NULL,
+rating TINYINT UNSIGNED  NOT NULL,
+comment TEXT,
+PRIMARY KEY (gamePublisherID, basicAccountUUID),
+CONSTRAINT FK_PR_GamePublisher FOREIGN KEY (gamePublisherID)
+  REFERENCES GamePublisher (gamePublisherID)
+  ON DELETE CASCADE,
+CONSTRAINT FK_PR_BasicAccount FOREIGN KEY (basicAccountUUID)
+  REFERENCES BasicAccount (basicAccountUUID)
+  ON DELETE CASCADE );
